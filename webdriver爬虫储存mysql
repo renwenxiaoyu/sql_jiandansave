@@ -1,0 +1,49 @@
+# -*- coding:utf-8 -*-
+from selenium import webdriver
+from lxml import etree
+import pymysql
+from pymysql import cursors
+
+class Jianshu(object):
+    "定义webdriver路径"
+    webdriver_path = r'D:\Program Files (x86)\Pycharm\chromedriver_win32\chromedriver.exe'
+    def __init__(self):
+        self.driver = webdriver.Chrome(executable_path=Jianshu.webdriver_path)   # 创建模拟浏览器
+        self.url = 'https://www.jianshu.com/p/6f85cd7efbbc'
+
+    def run(self):
+        "运行浏览器"
+        self.driver.get(self.url)
+        "获取页面AJAX代码"
+        source = self.driver.page_source
+        "解析代码"
+        self.parse_page(source)
+
+
+    def parse_page(self,source):
+        html = etree.HTML(source)
+        content = html.xpath('//div[@class="s-dsoj"]/span/text()')
+        self.Down(content)
+
+    def Down(self,content):
+
+        param={
+            'host': '127.0.0.1',
+            'port' : 3306,
+            'user' : 'root',
+            'password' : 'root',
+            'db' : 'jianshu',
+            'charset' : 'utf8'
+
+        }
+        self.conn = pymysql.connect(**param)   # 创建数据库连接
+        self.cursor = self.conn.cursor()    # 创建游标
+        self.sql = """insert into jianshu_other(id,word_count,read_count) VALUES (null,%s,%s)"""     # 构建将要输入数据库的数据
+        self.cursor.execute(self.sql,(content[0],content[1]))   # 游标传入数据
+        # print(content[0],content[1])
+        self.conn.commit()  # 提交（游标）当前操作
+
+
+if __name__ == '__main__':
+    spider = Jianshu()
+    spider.run()
